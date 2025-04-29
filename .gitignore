@@ -1,0 +1,11 @@
+# środowisko
+.venv/
+__pycache__/
+*.pyc
+
+# klucze, konfiguracje lokalne
+.env
+
+# logi / artefakty
+logs/
+*.log
