@@ -1,4 +1,13 @@
-alpaca-trade-api==3.0.1
+alpaca-py==0.42.2
 python-dotenv==1.0.1
 pandas==2.2.1
-streamlit==1.33.0        # frontend
+streamlit==1.33.0
+plotly>=5.22
+pydantic>=2.7          # konfiguracja/validacja
+rich>=13.7             # ładne logi
+pyyaml>=6.0            # konfiguracje strategii
+scikit-learn>=1.4      # baseline ML
+xgboost>=2.0           # * jeśli chcesz Boosting
+transformers>=4.41     # * FinBERT itp.
+torch>=2.2             # * dla transformers
+schedule>=1.2          # prosty scheduler

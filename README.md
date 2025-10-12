@@ -6,7 +6,8 @@ Minimalny cel → podłączyć się do konta demo w Alpaca i wykonać pierwsze z
 ```bash
 git clone …
 cd alpaca-bot
-python -m venv .venv && source .venv/bin/activate
+python -m venv .777 && source .777/bin/activate
 pip install -r requirements.txt
 cp .env.example .env   # uzupełnij klucze API
 python -m src
+
