@@ -1,0 +1,33 @@
+indices:
+  - name: NASDAQ-100
+    proxies: [QQQ, QQQM]
+  - name: S&P 500
+    proxies: [SPY, VOO, IVV]
+  - name: DAX (DE40)
+    proxies: [DAX, EWG]
+  - name: WIG20 (PL)
+    proxies: [EPOL]   # to MSCI Poland, najbliższy proxy w USA
+
+commodities:
+  - name: Gold
+    proxies: [GLD, IAU]
+  - name: Silver
+    proxies: [SLV]
+  - name: Crude Oil (WTI)
+    proxies: [USO]
+  - name: Natural Gas
+    proxies: [UNG]
+  - name: Broad Agriculture
+    proxies: [DBA]
+  - name: Copper
+    proxies: [CPER]
+
+crypto_buckets:
+  - name: Majors
+    symbols: [BTCUSD, ETHUSD]
+  - name: Alts
+    symbols: [SOLUSD, ADAUSD, DOGEUSD]
+
+notes:
+  - "Indeksy są **nietradowalne** – handlujesz ich ETF-ami (proxies)."
+  - "Dane rynkowe pobieramy z Alpaca Market Data (IEX/SIP) dla ETF/akcji oraz z Crypto feed dla krypto."
