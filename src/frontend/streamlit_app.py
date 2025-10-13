@@ -36,6 +36,8 @@ from src.backend.broker.alpaca_client import (
 
 WARSAW = ZoneInfo("Europe/Warsaw")
 
+st.sidebar.title("Nawigacja")
+st.sidebar.markdown("Wybierz stronę w menu poniżej (Analizy, RL Bot).")
 
 @st.cache_resource
 def get_broker() -> AlpacaBroker:
