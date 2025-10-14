@@ -194,7 +194,8 @@ class FeaturePipeline:
                 feats[f"f_{k}"] = self._zscore(s, self.cfg.norm_window).fillna(0.0).clip(-5.0, 5.0)
 
         out = pd.DataFrame(feats)
-        out.insert(0, "timestamp", X["timestamp"].values)
+        ts = pd.to_datetime(X["timestamp"], utc=True)
+        out.insert(0, "timestamp", ts)
 
         # maska gotowości: wszystkie wymagające okna muszą być pełne
         min_warmup = max(self.cfg.norm_window, self.cfg.sma_slow, self.cfg.bb_period, self.cfg.beta_window)

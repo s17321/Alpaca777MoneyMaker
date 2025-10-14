@@ -15,6 +15,7 @@ import altair as alt
 from src.backend.data.market_data import MarketDataService
 from src.backend.data.assets import AssetsService
 from src.backend.rl.features.pipeline import FeaturePipeline, FeaturePipelineConfig
+from src.backend.rl.environment.basic_env import TradingEnv, EnvConfig
 
 
 st.set_page_config(page_title="Analizy — Alpaca777", layout="wide")
@@ -169,24 +170,24 @@ if go:
         end = datetime.now(timezone.utc)
         start = end - timedelta(days=int(days))
         df = mds.get_bars(selected, timeframe=timeframe, start=start, end=end, use_cache=True)
-    # ... po if df.empty: else:
-    cfg = FeaturePipelineConfig()  # ewentualnie zmień okna pod siebie
+
+    cfg = FeaturePipelineConfig()
     pipe = FeaturePipeline(cfg)
 
-    # (opcjonalnie) benchmark do cech reżimu – np. QQQ jako rynek
     bm_df = None
-    # jeśli chcesz, możesz pobrać QQQ i tu wstawić: bm_df = mds.get_bars("QQQ", timeframe, start, end, use_cache=True)
-
     feats = pipe.compute_from_df(df, benchmark_df=bm_df)
 
     st.subheader("Wektor cech — ostatnie 10 wierszy")
     st.dataframe(feats.tail(10), use_container_width=True, height=280)
-    
+
     if df.empty:
         st.error("Brak danych dla tego symbolu/timeframe.")
     else:
+        # policz SMA PRZED zapisem do session_state
         df["sma_fast"] = df["close"].rolling(fast).mean()
         df["sma_slow"] = df["close"].rolling(slow).mean()
+
+        # wykres
         plot_candles(
             df,
             overlays={"SMA fast": df["sma_fast"], "SMA slow": df["sma_slow"]},
@@ -216,6 +217,69 @@ if go:
                 "Strategy": equity
             }).set_index(df["timestamp"])
         )
+
+        # ← ZAPIS do session_state na końcu (df już ma SMA)
+        st.session_state["analysis_df"] = df
+        st.session_state["analysis_feats"] = feats
+    
+# ---------- Symulacja (poza if go:) ----------
+st.subheader("Symulacja polityki SMA (proxy 'agenta')")
+run_sim = st.button("Uruchom symulację (SMA policy)")
+
+if run_sim:
+    df_cached = st.session_state.get("analysis_df")
+    feats_cached = st.session_state.get("analysis_feats")
+
+    if df_cached is None or feats_cached is None or df_cached.empty:
+        st.warning("Najpierw kliknij „Pobierz dane i policz”, żeby mieć świeże dane i cechy.")
+    else:
+        # asekuracja: gdyby SMA nie było (np. stary stan)
+        if "sma_fast" not in df_cached.columns or "sma_slow" not in df_cached.columns:
+            df_cached = df_cached.copy()
+            df_cached["sma_fast"] = df_cached["close"].rolling(fast).mean()
+            df_cached["sma_slow"] = df_cached["close"].rolling(slow).mean()
+            df_cached["timestamp"] = pd.to_datetime(df_cached["timestamp"], utc=True)
+            feats_cached["timestamp"] = pd.to_datetime(feats_cached["timestamp"], utc=True)
+
+        # --- ENV ---
+        env = TradingEnv(
+            bars=df_cached[["timestamp", "close"]],
+            feats=feats_cached,
+            cfg=EnvConfig(costs_bp=3.0)
+        )
+        _ = env.reset()
+
+        # --- POLICY ZGRANA DO CZASU ENV (ELIMINUJE konflikt typów czasu) ---
+        # sygnał SMA po danych źródłowych
+        sig_df = pd.DataFrame({
+            "timestamp": pd.to_datetime(df_cached["timestamp"], utc=True),
+            "sig": (df_cached["sma_fast"] > df_cached["sma_slow"]).astype(int).values,
+        }).sort_values("timestamp")
+
+        # oś czasu środowiska (to już są tylko timestampy "ready")
+        env_times = pd.DataFrame({
+            "timestamp": pd.to_datetime(pd.Series(env.times), utc=True)
+        }).sort_values("timestamp")
+
+        # dla każdego czasu w env weź ostatni dostępny sygnał (asof, backward)
+        M = pd.merge_asof(env_times, sig_df, on="timestamp", direction="backward")
+        policy_arr = M["sig"].fillna(0).astype(int).to_numpy()
+        # --- KONIEC POLICY ---
+
+        # pętla symulacji
+        equity_curve = []
+        step_idx = 0
+        while not env.done:
+            a = int(policy_arr[min(step_idx, len(policy_arr) - 1)])
+            _, _, _, info = env.step(a)
+            equity_curve.append(info.get("eq", env.equity))
+            step_idx += 1
+
+        # wykres equity
+        eq_index = pd.to_datetime(env.times[:len(equity_curve)], utc=True)
+        eq_series = pd.Series(equity_curve, index=eq_index, name="equity")
+        st.line_chart(eq_series)
+        st.caption(f"Equity końcowe: {eq_series.iloc[-1]:.3f}  | kroki: {len(eq_series)}")
 
 # ---------- Opisy – co to jest i po co ----------
 st.divider()
