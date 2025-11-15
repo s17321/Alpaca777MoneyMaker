@@ -1,0 +1,20 @@
+[project]
+name = "alpaca-bot-starter"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+"pandas==2.2.1",
+"numpy>=1.26",
+"pydantic>=2.7",
+"python-dotenv==1.0.1",
+"loguru>=0.7",
+"alpaca-py==0.42.2",
+]
+
+
+[tool.ruff]
+line-length = 100
+
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]

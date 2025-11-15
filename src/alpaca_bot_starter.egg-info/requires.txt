@@ -1,0 +1,6 @@
+pandas==2.2.1
+numpy>=1.26
+pydantic>=2.7
+python-dotenv==1.0.1
+loguru>=0.7
+alpaca-py==0.42.2

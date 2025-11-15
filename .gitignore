@@ -2,7 +2,7 @@
 .777/
 __pycache__/
 *.pyc
-data_cache
+data*
 
 # klucze, konfiguracje lokalne
 .env
